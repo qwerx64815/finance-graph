@@ -14,7 +14,7 @@ const loadCSVData = (filePath: string) => {
             complete: (result) => {
                 resolve(result.data);
             },
-            error: (error) => {
+            error: (error: Error) => {
                 reject(error);
             }
         });

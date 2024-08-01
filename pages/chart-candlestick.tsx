@@ -295,7 +295,7 @@ function CandlestickChart() {
                 <Box sx={{ width: '100%' }}>
                     <Tabs value={tabValue} onChange={handleTabChange} centered>
                         <Tab label="Stock Data" />
-                        <Tab label="Issuance Data" />
+                        <Tab label="Book Building" />
                     </Tabs>
                     {tabValue === 0 && (
                         <TableContainer component={Paper} style={{ marginTop: '20px', maxHeight: '600px', overflowY: 'auto' }}>
