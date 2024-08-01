@@ -22,6 +22,8 @@ const loadCSVData = (filePath: string) => {
 };
 
 export const loadData = async () => {
+    console.log(process.cwd());
+
     if (!stockInfoData.length) {
         stockInfoData = await loadCSVData(path.join(process.cwd(), 'public', 'stock_info.csv'));
     }
