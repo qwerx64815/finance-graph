@@ -2,62 +2,150 @@
 
 import React, { useEffect, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
-import Papa from 'papaparse';
+import TextField from '@mui/material/TextField';
+import Autocomplete from '@mui/material/Autocomplete';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Paper from '@mui/material/Paper';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
+import Box from '@mui/material/Box';
 
-interface StockData {
-    date: string;
+interface StockInfo {
     stockCode: number;
-    tradingVolume: number;
-    transactionAmount: number;
-    openingPrice: number;
-    closingPrice: number;
-    highestPrice: number;
-    lowerPrice: number;
-    priceChangePercentage: number;
-    numberOfTransactions: number;
+    stockName: string;
+    market: string;
+    exchange: string;
+    type: string;
+    lastUpdated: string;
 }
-export function parseData(csvContent: string): StockData[] {
-    const { data } = Papa.parse(csvContent, {
-        header: true,
-        dynamicTyping: true,
-        skipEmptyLines: true,
-    });
-
-    // console.log('Original data:');
+export function StockInfoMapping(data: string[]): StockInfo[] {
+    // console.log('Stock info:');
+    // console.log(data);
+  
+    return data.map((item: any) => ({
+        stockCode: item['symbol'],
+        stockName: item['name'],
+        market: item['market'],
+        exchange: item['exchange'],
+        type: item['type'],
+        lastUpdated: item['last_updated'],
+    }));
+}
+  
+interface StockData {
+  date: string;
+  stockCode: number;
+  openingPrice: number;
+  highestPrice: number;
+  lowerPrice: number;
+  closingPrice: number;
+  tradingVolume: number;
+}
+export function StockDataMapping(data: string[]): StockData[] {
+    // console.log('Stock data:');
     // console.log(data);
 
     return data.map((item: any) => ({
-        date: item['Date'],
-        stockCode: item['Stock Code'],
-        tradingVolume: item['Trading Volume'],
-        transactionAmount: item['Transaction Amount'],
-        openingPrice: item['Opening Price'],
-        closingPrice: item['Closing Price'],
-        highestPrice: item['Highest Price'],
-        lowerPrice: item['Lower Price'],
-        priceChangePercentage: item['Price Change Percentage'],
-        numberOfTransactions: item['Number of Transactions'],
+        date: item['date'],
+        stockCode: item['symbol'],
+        openingPrice: item['open'],
+        highestPrice: item['high'],
+        lowerPrice: item['low'],
+        closingPrice: item['close'],
+        tradingVolume: item['volume'],
     }));
 }
 
+interface IssuanceData {
+    stockCode: number;
+    timestamp: string;
+}
+export function IssuanceDataMapping(data: string[]): IssuanceData[] {
+    // console.log('Stock data:');
+    // console.log(data);
+  
+    return data.map((item: any) => ({
+        stockCode: item['stock_id'],
+        timestamp: item['timestamp'], // 提取日期部分
+    }));
+}
+  
 function CandlestickChart() {
+    const [stockInfo, setStockInfo] = useState<StockInfo[]>([]);
     const [stockData, setStockData] = useState<StockData[]>([]);
+    const [issuanceData, setIssuanceData] = useState<IssuanceData[]>([]);
+    const [selectedStock, setSelectedStock] = useState<StockInfo | null>(null);
+    const [tabValue, setTabValue] = useState(0);
+
     useEffect(() => {
-        fetch('TaiwanStock_2330_2017_to_2022.csv')
-            .then(response => response.text())
+        fetch('/api/stock-info')
+            .then(response => response.json())
             .then(data => {
-                const parsedData = parseData(data);
-                console.log('Parsed data:');
-                console.log(parsedData);
-                setStockData(parsedData);
+                const newData = StockInfoMapping(data)
+
+                console.log('stock-info-mapping:')
+                console.log(newData)
+
+                setStockInfo(newData)
             })
-            .catch(error => console.error("Failed to load CSV data:", error));
+            .catch(error => console.error("Failed to load stock info:", error));
     }, []);
 
-    const dividendPayoutDates = ['2017-07-20', '2018-07-19', '2019-07-18', '2019-10-17', '2020-01-16', '2020-04-16', '2020-07-16', '2020-10-15', '2021-01-14', '2021-04-15', '2021-07-15', '2021-10-14', '2022-01-13', '2022-04-14', '2022-07-14', '2022-10-13'];
-    const markPoints = dividendPayoutDates.map((date) => {
-        return { name: date, coord: [date, stockData.find(item => item.date === date)?.highestPrice] };
-    });
+    useEffect(() => {
+        if (selectedStock) {
+            fetch(`/api/stock-candles?stockCode=${selectedStock.stockCode}`)
+                .then(response => response.json())
+                .then(data => {
+                    const newData = StockDataMapping(data)
+
+                    console.log('stock-candles-mapping:')
+                    console.log(newData)
+
+                    setStockData(newData);
+                })
+                .catch(error => console.error("Failed to load stock data:", error));
+                
+            fetch(`/api/issuance?stockCode=${selectedStock.stockCode}`)
+                .then(response => response.json())
+                .then(data => {
+                    const newData = IssuanceDataMapping(data)
+
+                    console.log('issuance-data-mapping:')
+                    console.log(newData)
+
+                    setIssuanceData(newData);
+                })
+                .catch(error => console.error("Failed to load issuance data:", error));
+        }
+    }, [selectedStock]);
+
+    const handleStockChange = (event: any, value: StockInfo | null) => {
+        setSelectedStock(value);
+    };
+
+    const handleTabChange = (event: React.ChangeEvent<{}>, newValue: number) => {
+        setTabValue(newValue);
+    };
+
+    const filteredStockData = selectedStock
+        ? stockData.filter(item => item.stockCode === selectedStock.stockCode)
+        : [];
+
+    const filteredIssuanceData = selectedStock
+        ? issuanceData.filter(item => item.stockCode === selectedStock.stockCode)
+        : [];
+
+    const markPoints = issuanceData.map(item => ({
+        coord: [item.timestamp, filteredStockData.find(d => 
+            selectedStock !== null && item.stockCode === selectedStock.stockCode && d.date === item.timestamp.split(' ')[0])?.highestPrice],
+        value: '詢圈',
+        itemStyle: { color: 'red' },
+    }));
 
     const upColor = '#ec0000';
     const upBorderColor = '#8A0000';
@@ -65,7 +153,7 @@ function CandlestickChart() {
     const downBorderColor = '#008F28';
     const option = {
         title: {
-            text: 'TSMC 2330',
+            text: selectedStock ? `${selectedStock.stockName} (${selectedStock.stockCode})` : 'Select a stock',
             left: 0,
         },
         tooltip: {
@@ -73,14 +161,31 @@ function CandlestickChart() {
             axisPointer: {
                 type: 'cross',
             },
+            formatter: (params: any) => {
+                const date = new Date(params[0].axisValue).toISOString().split('T')[0]; // 提取日期部分
+                const open = params[0].data[1];
+                const close = params[0].data[2];
+                const low = params[0].data[3];
+                const high = params[0].data[4];
+                const color = params[0].color;
+                
+                return `
+                    <div>${date}</div>
+                    <div><span style="color: ${color}; padding-right: 5px;">●</span>Candlestick</div>
+                    <div>Open: ${open}</div>
+                    <div>Close: ${close}</div>
+                    <div>Low: ${low}</div>
+                    <div>High: ${high}</div>
+                `;
+            },
         },
         legend: {
             data: ['candlesticks'],
         },
         grid: {
-            left: '10%',
-            right: '10%',
-            bottom: '15%',
+            left: '5%',
+            right: '5%',
+            bottom: '20%',
         },
         dataZoom: [
             {
@@ -97,8 +202,8 @@ function CandlestickChart() {
             }
         ],
         xAxis: {
-            type: 'category',
-            data: stockData.map(item => item.date),
+            type: 'time',
+            data: filteredStockData.map(item => item.date),
             boundaryGap: false,
             axisLine: { onZero: false },
             splitLine: { show: false },
@@ -108,14 +213,14 @@ function CandlestickChart() {
         yAxis: {
             scale: true,
             splitArea: {
-                show: true
+                show: true,
             },
         },
         series: [
             {
                 name: 'candlesticks',
                 type: 'candlestick',
-                data: stockData.map(item => [item.openingPrice, item.closingPrice, item.lowerPrice, item.highestPrice]),
+                data: filteredStockData.map(item => [item.date, item.openingPrice, item.closingPrice, item.lowerPrice, item.highestPrice]),
                 itemStyle: {
                     color: upColor,
                     color0: downColor,
@@ -123,20 +228,7 @@ function CandlestickChart() {
                     borderColor0: downBorderColor
                 },
                 markPoint: {
-                    label: {
-                        show: true,
-                        fontSize: 10,
-                        overflow: 'break',
-                        formatter: (param: any) => {
-                            return '股利\n發放日';
-                        },
-                    },
                     data: markPoints,
-                    tooltip: {
-                        formatter: (param: any) => {
-                            return param.name + '<br>' + (param.data.coord || '');
-                        }
-                    }
                 },
                 markLine: {
                     symbol: ['none', 'none'],
@@ -188,7 +280,77 @@ function CandlestickChart() {
         ],
     };
 
-    return <ReactECharts theme={'dark'} option={option} style={{ height: 400 }} />;
-};
+    return (
+        <div>
+            <div style={{ backgroundColor: '#f0f0f0', padding: '10px 15px', borderRadius: '5px', marginBottom: '20px' }}>
+                <Autocomplete
+                    options={stockInfo}
+                    getOptionLabel={(option) => `${option.stockName} (${option.stockCode})`}
+                    onChange={handleStockChange}
+                    renderInput={(params) => <TextField {...params} label="Select Stock" />}
+                />
+            </div>
+            <ReactECharts theme={'dark'} option={option} style={{ height: 400, margin: '20px 0' }} />
+            <div style={{ backgroundColor: '#f0f0f0', padding: '10px 15px', borderRadius: '5px', marginTop: '20px' }}>
+                <Box sx={{ width: '100%' }}>
+                    <Tabs value={tabValue} onChange={handleTabChange} centered>
+                        <Tab label="Stock Data" />
+                        <Tab label="Issuance Data" />
+                    </Tabs>
+                    {tabValue === 0 && (
+                        <TableContainer component={Paper} style={{ marginTop: '20px', maxHeight: '600px', overflowY: 'auto' }}>
+                            <Table>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>Date</TableCell>
+                                        <TableCell align="right">Open</TableCell>
+                                        <TableCell align="right">High</TableCell>
+                                        <TableCell align="right">Low</TableCell>
+                                        <TableCell align="right">Close</TableCell>
+                                        <TableCell align="right">Volume</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                {filteredStockData.map((row) => (
+                                    <TableRow key={row.date}>
+                                        <TableCell component="th" scope="row">
+                                            {row.date}
+                                        </TableCell>
+                                        <TableCell align="right">{row.openingPrice}</TableCell>
+                                        <TableCell align="right">{row.highestPrice}</TableCell>
+                                        <TableCell align="right">{row.lowerPrice}</TableCell>
+                                        <TableCell align="right">{row.closingPrice}</TableCell>
+                                        <TableCell align="right">{row.tradingVolume}</TableCell>
+                                    </TableRow>
+                                ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    )}
+                    {tabValue === 1 && (
+                        <TableContainer component={Paper} style={{ marginTop: '20px', maxHeight: '600px', overflowY: 'auto' }}>
+                            <Table>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>Timestamp</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                {filteredIssuanceData.map((row) => (
+                                    <TableRow key={row.timestamp}>
+                                        <TableCell component="th" scope="row">
+                                            {row.timestamp}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    )}
+                </Box>
+            </div>
+        </div>
+    );
+}
 
 export default CandlestickChart;

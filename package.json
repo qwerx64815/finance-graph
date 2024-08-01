@@ -10,9 +10,14 @@
     "deploy": "gh-pages -d src"
   },
   "dependencies": {
+    "@emotion/react": "^11.13.0",
+    "@emotion/styled": "^11.13.0",
+    "@mui/icons-material": "^5.16.6",
+    "@mui/material": "^5.16.6",
     "@types/papaparse": "^5.3.14",
     "echarts": "^5.5.0",
     "echarts-for-react": "^3.0.2",
+    "express": "^4.19.2",
     "next": "14.2.3",
     "papaparse": "^5.4.1",
     "react": "^18",

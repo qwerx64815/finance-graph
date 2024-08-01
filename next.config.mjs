@@ -1,9 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    output: "export",
     images: {
         loader: "akamai",
         path: "",
+    },
+    async rewrites() {
+        return [
+            {
+                source: '/api/:path*',
+                destination: '/pages/api/:path*',
+            },
+        ];
     },
 };
 
