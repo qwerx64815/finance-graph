@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "deploy": "gh-pages -d out --nojekyll --cname https://qwerx64815.github.io/",
-    "static": "next build && next export && touch ./out/.nojekyll && echo 'https://qwerx64815.github.io/' > ./out/CNAME",
+    "static": "next build && next export && touch ./out/.nojekyll && echo 'https://qwerx64815.github.io/' > ./out/CNAME"
   },
   "dependencies": {
     "@emotion/react": "^11.13.0",
