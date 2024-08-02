@@ -14,6 +14,7 @@ import Paper from '@mui/material/Paper';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
+import Papa from 'papaparse';
 
 interface StockInfo {
     stockCode: number;
@@ -26,7 +27,7 @@ interface StockInfo {
 export function StockInfoMapping(data: string[]): StockInfo[] {
     // console.log('Stock info:');
     // console.log(data);
-  
+
     return data.map((item: any) => ({
         stockCode: item['symbol'],
         stockName: item['name'],
@@ -36,15 +37,15 @@ export function StockInfoMapping(data: string[]): StockInfo[] {
         lastUpdated: item['last_updated'],
     }));
 }
-  
+
 interface StockData {
-  date: string;
-  stockCode: number;
-  openingPrice: number;
-  highestPrice: number;
-  lowerPrice: number;
-  closingPrice: number;
-  tradingVolume: number;
+    date: string;
+    stockCode: number;
+    openingPrice: number;
+    highestPrice: number;
+    lowerPrice: number;
+    closingPrice: number;
+    tradingVolume: number;
 }
 export function StockDataMapping(data: string[]): StockData[] {
     // console.log('Stock data:');
@@ -68,13 +69,13 @@ interface IssuanceData {
 export function IssuanceDataMapping(data: string[]): IssuanceData[] {
     // console.log('Stock data:');
     // console.log(data);
-  
+
     return data.map((item: any) => ({
         stockCode: item['stock_id'],
         timestamp: item['timestamp'], // 提取日期部分
     }));
 }
-  
+
 function CandlestickChart() {
     const [stockInfo, setStockInfo] = useState<StockInfo[]>([]);
     const [stockData, setStockData] = useState<StockData[]>([]);
@@ -83,44 +84,50 @@ function CandlestickChart() {
     const [tabValue, setTabValue] = useState(0);
 
     useEffect(() => {
-        fetch('/api/stock-info')
-            .then(response => response.json())
-            .then(data => {
-                const newData = StockInfoMapping(data)
+        fetch('stock_info.csv')
+            .then(response => response.text())
+            .then(textData => {
+                const { data }: { data: string[] } = Papa.parse(textData, {
+                    header: true,
+                    dynamicTyping: true,
+                    skipEmptyLines: true,
+                });
 
-                console.log('stock-info-mapping:')
-                console.log(newData)
-
-                setStockInfo(newData)
+                const mappingData = StockInfoMapping(data);
+                setStockInfo(mappingData);
             })
-            .catch(error => console.error("Failed to load stock info:", error));
+            .catch(error => console.error("Failed to load stock info data:", error));
     }, []);
 
     useEffect(() => {
-        if (selectedStock) {
-            fetch(`/api/stock-candles?stockCode=${selectedStock.stockCode}`)
-                .then(response => response.json())
-                .then(data => {
-                    const newData = StockDataMapping(data)
+        if (selectedStock)  {
+            fetch('stock_candles.csv')
+                .then(response => response.text())
+                .then(textData => {
+                    const { data }: { data: string[] } = Papa.parse(textData, {
+                        header: true,
+                        dynamicTyping: true,
+                        skipEmptyLines: true,
+                    });
 
-                    console.log('stock-candles-mapping:')
-                    console.log(newData)
-
-                    setStockData(newData);
+                    const mappingData = StockDataMapping(data);
+                    setStockData(mappingData);
                 })
-                .catch(error => console.error("Failed to load stock data:", error));
-                
-            fetch(`/api/issuance?stockCode=${selectedStock.stockCode}`)
-                .then(response => response.json())
-                .then(data => {
-                    const newData = IssuanceDataMapping(data)
+                .catch(error => console.error("Failed to load stock info data:", error));
 
-                    console.log('issuance-data-mapping:')
-                    console.log(newData)
+            fetch('Issuance_110_1-113_7.csv')
+                .then(response => response.text())
+                .then(textData => {
+                    const { data }: { data: string[] } = Papa.parse(textData, {
+                        header: true,
+                        dynamicTyping: true,
+                        skipEmptyLines: true,
+                    });
 
-                    setIssuanceData(newData);
+                    const mappingData = IssuanceDataMapping(data);
+                    setIssuanceData(mappingData);
                 })
-                .catch(error => console.error("Failed to load issuance data:", error));
+                .catch(error => console.error("Failed to load stock info data:", error));
         }
     }, [selectedStock]);
 

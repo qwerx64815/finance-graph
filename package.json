@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "deploy": "gh-pages -d out --nojekyll -t true"
+    "deploy": "gh-pages -d src"
   },
   "dependencies": {
     "@emotion/react": "^11.13.0",
@@ -17,6 +17,7 @@
     "@types/papaparse": "^5.3.14",
     "echarts": "^5.5.0",
     "echarts-for-react": "^3.0.2",
+    "fs": "^0.0.1-security",
     "next": "14.2.3",
     "papaparse": "^5.4.1",
     "react": "^18",
